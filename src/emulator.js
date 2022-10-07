@@ -41,9 +41,7 @@ export class Emulator {
           clearInterval(intervalId);
           // todo: enable via config
           // console.timeEnd("emulator - startup");
-        } catch (e){
-
-        }
+        } catch (e) {}
       }, 50);
     });
   }
@@ -53,12 +51,14 @@ export class Emulator {
     console.log(this.port);
     const restPort = "--rest-port=" + this.port;
     const logFormat = "--log-format=JSON";
+    const disableTxValidation = " --skip-tx-validation";
 
     this.process = spawn("flow", [
       "emulator",
       "--verbose",
       logFormat,
       restPort,
+      disableTxValidation,
     ]);
 
     await this.waitForGreenLight();
