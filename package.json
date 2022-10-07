@@ -10,11 +10,13 @@
   ],
   "scripts": {
     "prebuild": "rimraf lib/",
-    "build": "esbuild index.js --bundle --platform=node --external:./node_modules/* --outfile=/lib/index.js",
+    "build": "esbuild index.js --bundle --platform=node --outfile=/lib/index.js",
+    "dev": "esbuild index.js --bundle --platform=node --outfile=/lib/index.js --watch",
     "prepublishOnly": "yarn build"
   },
   "devDependencies": {
     "esbuild": "^0.15.10",
+    "nodemon": "^2.0.20",
     "rimraf": "^3.0.2"
   },
   "dependencies": {

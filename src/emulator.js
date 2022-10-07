@@ -1,5 +1,5 @@
-import portastic from "portastic";
-const { spawn } = require("child_process");
+import freePort from "portastic";
+import { spawn } from "child_process";
 import fetch from "node-fetch";
 
 export class Emulator {
@@ -11,17 +11,16 @@ export class Emulator {
   async findPort() {
     return new Promise((resolve, reject) => {
       // todo: use range from config
-      portastic.find(
+      freePort.find(
         {
           min: 8888,
           max: 9000,
         },
-        (err, port) => {
-          if (!err) {
-            console.log("Found empty port:", port);
-            resolve(port);
+        (ports) => {
+          if (ports.length > 0) {
+            resolve(ports[0]);
           } else {
-            reject(err);
+            reject("No ports available in range 8888 - 9000");
           }
         }
       );
@@ -31,17 +30,19 @@ export class Emulator {
   async waitForGreenLight() {
     return new Promise((resolve, reject) => {
       let intervalId;
+      // todo: enable via config
+      // console.time("emulator - startup");
       intervalId = setInterval(async () => {
         try {
-          console.log("Emulator is up!");
-          const block = await fetch(
-            `http://localhost:${this.port}/v1/blocks?height=final`
-          );
-          console.log("got block", block);
+          // We simply want to fetch a block from Flow Emulator here
+          const url = `http://localhost:${this.port}/v1/blocks?height=final`;
+          await fetch(url);
           resolve(true);
           clearInterval(intervalId);
-        } catch (e) {
-          console.log("Still down...");
+          // todo: enable via config
+          // console.timeEnd("emulator - startup");
+        } catch (e){
+
         }
       }, 50);
     });
@@ -49,6 +50,7 @@ export class Emulator {
 
   async start() {
     this.port = await this.findPort();
+    console.log(this.port);
     const restPort = "--rest-port=" + this.port;
     const logFormat = "--log-format=JSON";
 
@@ -58,6 +60,8 @@ export class Emulator {
       logFormat,
       restPort,
     ]);
+
+    await this.waitForGreenLight();
     this.initialized = true;
   }
 
