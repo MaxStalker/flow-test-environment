@@ -1,0 +1,27 @@
+{
+  "name": "flow-test-environment",
+  "version": "0.1.0",
+  "description": "Jest Testing Environment for Flow Network",
+  "author": "Max Daunarovich",
+  "license": "ISC",
+  "main": "./lib/cjs/index.js",
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "prebuild": "rimraf lib/",
+    "build": "esbuild index.js --bundle --platform=node --external:./node_modules/* --outfile=/lib/index.js",
+    "prepublishOnly": "yarn build"
+  },
+  "devDependencies": {
+    "esbuild": "^0.15.10",
+    "rimraf": "^3.0.2"
+  },
+  "dependencies": {
+    "chalk": "^5.1.0",
+    "jest-dev-server": "^6.1.1",
+    "jest-environment-node": "^29.1.2",
+    "node-fetch": "^3.2.10",
+    "portastic": "^1.0.1"
+  }
+}
