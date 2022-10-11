@@ -1,37 +1,23 @@
 import freePort from "portastic";
 import { spawn } from "child_process";
 import fetch from "node-fetch";
+import portHandler from "./port-handler";
 
 export class Emulator {
   constructor() {
     this.initialized = false;
-    this.port = null;
-  }
-
-  async findPort() {
-    return new Promise((resolve, reject) => {
-      // todo: use range from config
-      freePort.find(
-        {
-          min: 8888,
-          max: 9000,
-        },
-        (ports) => {
-          if (ports.length > 0) {
-            resolve(ports[0]);
-          } else {
-            reject("No ports available in range 8888 - 9000");
-          }
-        }
-      );
-    });
+    this.dock = [];
   }
 
   async waitForGreenLight() {
+    if (this.initialized) {
+      return true;
+    }
     return new Promise((resolve, reject) => {
       let intervalId;
       // todo: enable via config
-      // console.time("emulator - startup");
+      const timeTag = `emulator on port ${this.port}`;
+      console.time(timeTag);
       intervalId = setInterval(async () => {
         try {
           // We simply want to fetch a block from Flow Emulator here
@@ -40,16 +26,19 @@ export class Emulator {
           resolve(true);
           clearInterval(intervalId);
           // todo: enable via config
-          // console.timeEnd("emulator - startup");
+          console.timeEnd(timeTag);
         } catch (e) {}
       }, 50);
     });
   }
 
   async start() {
-    this.port = await this.findPort();
-    console.log(this.port);
-    const restPort = "--rest-port=" + this.port;
+    const dock = await portHandler.makeDock();
+    const [grpc, admin, port] = dock;
+    console.log({ grpc, admin, port });
+    const restPort = "--rest-port=" + port;
+    const adminServerPort = "--admin-port=" + admin;
+    const grpcPort = "--port=" + grpc;
     const logFormat = "--log-format=JSON";
     const disableTxValidation = " --skip-tx-validation";
 
@@ -57,9 +46,24 @@ export class Emulator {
       "emulator",
       "--verbose",
       logFormat,
+      grpcPort,
+      adminServerPort,
       restPort,
       disableTxValidation,
     ]);
+
+    this.port = port;
+    this.dock = dock;
+
+    // Add handlers
+
+    /*    this.process.stdout.on("data", (data) => {
+      console.log(data.toString());
+    });
+
+    this.process.stderr.on("data", (data) => {
+      console.error(data.toString());
+    });*/
 
     await this.waitForGreenLight();
     this.initialized = true;
@@ -67,6 +71,7 @@ export class Emulator {
 
   async stop() {
     return new Promise((resolve) => {
+      portHandler.free(this.dock);
       this.process.kill();
       setTimeout(() => {
         this.initialized = false;
