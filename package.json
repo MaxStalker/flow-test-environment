@@ -1,6 +1,6 @@
 {
   "name": "flow-test-environment",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Jest Testing Environment for Flow Network",
   "author": "Max Daunarovich",
   "license": "ISC",
