@@ -1,28 +1,38 @@
 import NodeEnvironment from "jest-environment-node";
 import { Emulator } from "./emulator";
+import portHandler from "./port-handler";
 
 class FlowEnvironment extends NodeEnvironment {
-  // MAYBE we will need this, it was using in older version,
-  // but newer runtime doesn't have it
-  /*
-    setTimeout(timeout) {
-        if (this.global.jasmine) {
-            // eslint-disable-next-line no-underscore-dangle
-            this.global.jasmine.DEFAULT_TIMEOUT_INTERVAL = timeout
-        } else {
-            this.global[Symbol.for('TEST_TIMEOUT_SYMBOL')] = timeout
-        }
-    }
-    */
+  constructor(config, context) {
+    super(config, context);
+    // console.log(config.globalConfig);
+    // console.log(config.projectConfig);
+
+    this.testPath = context.testPath;
+    this.docblockPragmas = context.docblockPragmas;
+  }
 
   // Setup Phase
   async setup() {
+    await super.setup();
+
+    console.log("FENV - START");
+    // TODO: Read this value from config - how much time we wait before fetching free ports
     const emulator = new Emulator();
+    await emulator.start();
+    console.log("FENV - Emulator Started");
     this.global.emulator = emulator;
   }
 
   // Teardown Phase
-  async teardown() {}
+  async teardown() {
+    await this.global.emulator.stop();
+    await super.teardown();
+  }
+
+  getVmContext() {
+    return super.getVmContext();
+  }
 }
 
 export default FlowEnvironment;

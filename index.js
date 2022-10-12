@@ -1,3 +1,1 @@
-import { Emulator } from "./src/emulator";
-
-(async () => {})();
+module.exports = require('./lib/index')

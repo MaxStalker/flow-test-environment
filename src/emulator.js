@@ -1,12 +1,42 @@
-import freePort from "portastic";
 import { spawn } from "child_process";
+import freePort from "portastic";
 import fetch from "node-fetch";
-import portHandler from "./port-handler";
 
 export class Emulator {
   constructor() {
     this.initialized = false;
     this.dock = [];
+  }
+
+  fixJSON(msg) {
+    const parts = msg.split("\n").filter((item) => item !== "");
+    const reconstructed = parts.length > 1 ? `[${parts.join(",")}]` : parts[0];
+    return reconstructed;
+  }
+
+  parseDataBuffer(dataBuffer) {
+    const data = dataBuffer.toString();
+    console.log({ data });
+    try {
+      // if (data.includes("msg")) {
+      const fixed = this.fixJSON(data);
+      let messages = JSON.parse(fixed);
+
+      // Make data into array if not array
+      messages = [].concat(messages);
+
+      // Map string levels to enum
+      messages = messages.map((m) => ({
+        ...m,
+        level: "log",
+      }));
+
+      return messages;
+      // }
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
   }
 
   async waitForGreenLight() {
@@ -21,27 +51,52 @@ export class Emulator {
       intervalId = setInterval(async () => {
         try {
           // We simply want to fetch a block from Flow Emulator here
-          const url = `http://localhost:${this.port}/v1/blocks?height=final`;
-          await fetch(url);
-          resolve(true);
-          clearInterval(intervalId);
+          // const url = `http://localhost:${this.port}/v1/blocks?height=final`;
+          // await fetch(url);
           // todo: enable via config
-          console.timeEnd(timeTag);
+
+          if (!this.initialized) {
+            resolve(true);
+            console.timeEnd(timeTag);
+            clearInterval(intervalId);
+          }
         } catch (e) {}
-      }, 50);
+      }, 25);
     });
   }
 
   async start() {
-    const dock = await portHandler.makeDock();
+    // TODO: This is super hacky solution. Fix this with proper one 🙏
+    const dock = await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        freePort.find(
+          {
+            min: 8000,
+            max: 10000,
+          },
+          (ports) => {
+            if (ports.length < 3) {
+              reject("Not enough ports");
+            } else {
+              resolve(ports.slice(0, 3));
+            }
+          }
+        );
+      });
+    });
+    console.log({ dock });
     const [grpc, admin, port] = dock;
+
     console.log({ grpc, admin, port });
+
     const restPort = "--rest-port=" + port;
     const adminServerPort = "--admin-port=" + admin;
     const grpcPort = "--port=" + grpc;
     const logFormat = "--log-format=JSON";
     const disableTxValidation = " --skip-tx-validation";
 
+    console.log("Spawning process");
+    // Try to find ./flow.json file and create it if it doesn't exist
     this.process = spawn("flow", [
       "emulator",
       "--verbose",
@@ -57,13 +112,28 @@ export class Emulator {
 
     // Add handlers
 
-    /*    this.process.stdout.on("data", (data) => {
-      console.log(data.toString());
+    this.process.stdout.on("data", (buffer) => {
+      const logs = this.parseDataBuffer(buffer);
+      console.log({ logs });
+      const bindError = logs.find((log) => {
+        return log.msg.includes("Failed to startup REST API");
+      });
+      if (bindError) {
+        this.notStarted = true;
+      }
+
+      const started = logs.find((log) => {
+        return log.msg.includes("Starting REST API");
+      });
+      if (started) {
+        console.log("CACHING!");
+        this.initialized = true;
+      }
     });
 
     this.process.stderr.on("data", (data) => {
       console.error(data.toString());
-    });*/
+    });
 
     await this.waitForGreenLight();
     this.initialized = true;
@@ -71,7 +141,6 @@ export class Emulator {
 
   async stop() {
     return new Promise((resolve) => {
-      portHandler.free(this.dock);
       this.process.kill();
       setTimeout(() => {
         this.initialized = false;
