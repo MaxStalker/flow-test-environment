@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "prebuild": "rimraf lib/",
-    "build": "esbuild index.js --bundle --platform=node --outfile=./lib/index.js",
+    "build": "esbuild ./src/FlowEnvironment.js --bundle --platform=node --outfile=./lib/index.js",
     "dev": "esbuild ./src/FlowEnvironment.js --bundle --platform=node --outfile=./lib/index.js --watch",
     "build:babel": "babel --config-file ./babel.config.js -d lib --ignore \"**/*.test.js\" src",
     "build:babel:watch": "babel --watch --config-file ./babel.config.js -d lib --ignore \"**/*.test.js\" src",
