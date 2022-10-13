@@ -97,7 +97,8 @@ export class Emulator {
 
     console.log("Spawning process");
     // Try to find ./flow.json file and create it if it doesn't exist
-    this.process = spawn("flow", [
+    const processName = `D:\\dev\\jest-environment-test\\bin\\emulator.exe`;
+    this.process = spawn(processName, [
       "emulator",
       "--verbose",
       logFormat,
