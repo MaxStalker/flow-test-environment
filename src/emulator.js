@@ -65,7 +65,7 @@ export class Emulator {
     });
   }
 
-  async start() {
+  async start(processName) {
     // TODO: This is super hacky solution. Fix this with proper one 🙏
     const dock = await new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -84,10 +84,7 @@ export class Emulator {
         );
       });
     });
-    console.log({ dock });
     const [grpc, admin, port] = dock;
-
-    console.log({ grpc, admin, port });
 
     const restPort = "--rest-port=" + port;
     const adminServerPort = "--admin-port=" + admin;
@@ -97,7 +94,6 @@ export class Emulator {
 
     console.log("Spawning process");
     // Try to find ./flow.json file and create it if it doesn't exist
-    const processName = `D:\\dev\\jest-environment-test\\bin\\emulator.exe`;
     console.log("Running custom process!")
     this.process = spawn(processName, [
       "emulator",
